@@ -8,6 +8,7 @@ const fingerPrinter = require('fingerprinting');
 const chalk = require('chalk');
 const meow = require('meow');
 const glob = require('glob');
+const package = require('./package.json');
 
 
 //       readFile : String -> Task e String
@@ -55,7 +56,7 @@ const writeToPath = pathName => contents => {
             .chain(stats => stats.isDirectory() ? Task.of() : mkdir(dirPath))
             .orElse((err) => mkdir(dirPath))
         )
-        .reduce((acc, curr) => acc.chain(a => curr))
+        .reduce((acc, curr) => acc.chain(a => curr), Task.of())
         .chain(() => writeFile(pathName)(contents));
 };
 
@@ -85,7 +86,7 @@ const log = description => thing => {
 const extractFileNameFromHref = href => {
     return new Task((reject, resolve) =>
         !href ? reject('href cannot be null') : resolve(url.parse(href).pathname));
-}
+};
 
 //       fingerPrintFile : String -> Task e String
 function fingerPrintFile(fileName) {
@@ -107,8 +108,12 @@ function fingerPrintFile(fileName) {
 //       getFilesFromPattern : String -> Task e (List String)
 function getFilesFromPattern(pattern) {
     return new Task((reject, resolve) => 
-        glob(pattern, {nonull: false}, (err, matches) => 
-            err ? reject(err) : resolve(List(matches))));
+        glob(pattern, {nonull: false}, (err, matches) => {
+            if (err) return reject(err);
+            if (matches.length === 0) return reject({ message: `No files could be found that match given glob '${pattern}'` });
+            return resolve(List(matches));
+        })
+    );
 }
 
 //       fingerPrintFrom : (String, String) -> ()
@@ -121,9 +126,11 @@ function fingerPrintFrom(pattern, outPath){
                     fingerPrintFile(filePath)
                         .chain(writeToPath(path.join((outPath || '.').trim(), filePath)))
                 )
-                .reduce((acc, curr) => acc.chain(a => curr))
+                .reduce((acc, curr) => acc.chain(a => curr), Task.of())
         )
-        .fork(console.error.bind(console, 'error'), () => {
+        .fork(err => {
+            console.error(chalk.red('Error:'), err.message);
+        }, () => {
             console.log(chalk.green.bold('Success!'));
             console.timeEnd('Time consumed');
         });
@@ -134,7 +141,7 @@ module.exports = fingerPrintFile;
 
 const cli = meow(`
     Usage
-      $ asset-cache-bust <input>
+      $ ${package.name} <input>
 
     Input
         <input>     Required    A glob that should be used to locate files as templates for fingerprinting
@@ -143,9 +150,9 @@ const cli = meow(`
         -o, --output  Send fingerprinted HTML output to given file path instead of overwriting the input files
  
     Examples
-      $ asset-cache-bust index.html -o out/
+      $ ${package.name} index.html -o out/
 
-      $ asset-cache-bust '*.html'
+      $ ${package.name} '*.html'
 `, {
     alias: {
         o: 'output'
@@ -157,7 +164,7 @@ switch(cli.input.length){
         console.log(
             [ ''
             , chalk.red(`Missing argument: ${chalk.bold('<input>')} HTML file path`)
-            , `use ${chalk.bold('fingerprint --help')} for usage information`
+            , `use ${chalk.bold(package.name + ' --help')} for usage information`
             ].join('\n')
         );
         break;

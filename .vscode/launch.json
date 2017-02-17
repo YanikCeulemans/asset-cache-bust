@@ -36,6 +36,16 @@
         },
         {
             "type": "node",
+            "request": "launch",
+            "name": "Fingerprint with non-existant file",
+            "program": "${workspaceRoot}/index.js",
+            "cwd": "${workspaceRoot}",
+            "args": [
+                "non.html", "-o out/"
+            ]
+        },
+        {
+            "type": "node",
             "request": "attach",
             "name": "Attach to Process",
             "port": 5858

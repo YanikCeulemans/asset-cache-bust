@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Bust your asset cache based on querystring hashes from content",
   "main": "index.js",
-  "bin": "index.js",
+  "bin": "bin/asset-cache-bust",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
