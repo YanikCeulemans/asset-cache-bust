@@ -1,15 +1,21 @@
 const Task = require('data.task');
 const fs = require('fs');
+const path = require('path');
 const { List } = require('immutable-ext');
 const htmlParser = require('htmlparser2');
 const fingerPrinter = require('fingerprinting');
 const chalk = require('chalk');
 const meow = require('meow');
+const glob = require('glob');
 
+
+//       readFile : String -> Task e String
 function readFile (fileName) {
+    console.log(`Reading file: ${chalk.bold(fileName)}`);
     return new Task((reject, resolve) => fs.readFile(fileName, 'utf-8', (err, contents) => err ? reject(err) : resolve(contents)));
 }
 
+//       extractStyleHrefsFromHtml : String -> Task e (List String)
 function extractStyleHrefsFromHtml(html) {
     return new Task((reject, resolve) => {
         const styleHrefs = [];
@@ -27,10 +33,38 @@ function extractStyleHrefsFromHtml(html) {
     });
 }
 
+//    writeFile : String -> String -> Task e ()
 const writeFile = fileName => contents => {
+    console.log(`Writing file: ${chalk.bold(fileName)}`);
     return new Task((reject, resolve) => fs.writeFile(fileName, contents, err => err ? reject(err) : resolve()));
-}
+};
 
+//    stat : String -> Task e Stats
+const stat = path => new Task((reject, resolve) => fs.stat(path, (err, stats) => err ? reject(err) : resolve(stats)));
+
+//    mkdir : String -> Task e ()
+const mkdir = path => new Task((reject, resolve) => fs.mkdir(path, err => err ? reject(err) : resolve()));
+
+//    writeToPath : String -> String -> Task e ()
+const writeToPath = pathName => contents => {
+    return List.of(...path.normalize(path.dirname(pathName)).split(path.sep))
+        .map((d, index, dirs) => 
+            path.join(...dirs.toArray().slice(0, index + 1)))
+        .map(dirPath =>
+            // TODO: Using stat to check for existence is not recommended, refactor. See: https://nodejs.org/api/fs.html#fs_fs_stat_path_callback
+            stat(dirPath)
+                .chain(stats =>
+                    stats.isDirectory() ? Task.of() : mkdir(dirPath))
+                .orElse((err) => mkdir(dirPath))
+        )
+        .reduce((acc, curr) => {
+            return acc.chain(a => curr);
+        })
+        .chain(() => 
+            writeFile(pathName)(contents));
+};
+
+//    createFileFingerPrint : String -> String -> { original: String, fingerPrinted: String }
 const createFileFingerPrint = fileName => contents => {
     const separator = fileName.indexOf('?') !== -1 ? '&' : '?';
     const fingerPrint = fingerPrinter(fileName, {
@@ -48,21 +82,21 @@ const log = description => thing => {
     return thing;
 };
 
-const output = fileName => contents => {
-    if (fileName == null || fileName.trim() === ''){
+//    output : String -> String -> Task e ()
+const output = pathName => contents => {
+    if (pathName == null || pathName.trim() === ''){
         return new Task((reject, resolve) => {
             process.stdout.write(contents);
             resolve();
         });
     }
 
-    return writeFile(fileName.trim())(contents);
+    return writeToPath(pathName.trim())(contents);
 }
 
-function fingerPrintFile(fileName, outName) {
-    console.time('Time consumed');
-
-    readFile(fileName)
+//       fingerPrintFile : String -> Task e String
+function fingerPrintFile(fileName) {
+    return readFile(fileName)
         .chain(html =>
             extractStyleHrefsFromHtml(html)
                 .chain(styleHrefs =>
@@ -79,12 +113,32 @@ function fingerPrintFile(fileName, outName) {
                             acc.replace(fingerPrint.original, fingerPrint.fingerPrinted), html
                         )
                 )
+        );
+}
+
+//       getFilesFromPattern : String -> Task e (List String)
+function getFilesFromPattern(pattern) {
+    return new Task((reject, resolve) => 
+        glob(pattern, {nonull: false}, (err, matches) => 
+            err ? reject(err) : resolve(List.of(...matches))));
+}
+
+//       fingerPrintFrom : (String, String) -> ()
+function fingerPrintFrom(pattern, outPath){
+    console.time('Time consumed');
+    getFilesFromPattern(pattern)
+        .chain(filePaths =>
+            filePaths
+                .map(filePath =>
+                    fingerPrintFile(filePath)
+                        .chain(output(path.join(outPath, filePath)))
+                )
+                .reduce((acc, curr) => acc.chain(a => curr))
         )
-        .chain(output(outName))
         .fork(console.error.bind(console, 'error'), () => {
-            if (outName == null || outName.trim() === '') return;
+            if (outPath == null || outPath.trim() === '') return;
             
-            console.log(chalk.green.bold('Success!') + `\nFingerprinted: ${fileName} -> ${outName}`);
+            console.log(chalk.green.bold('Success!'));
             console.timeEnd('Time consumed');
         });
 }
@@ -97,7 +151,7 @@ const cli = meow(`
       $ fingerprint <input>
 
     Input
-        <input>     Required    The HTML file path that should be used as template for fingerprinting
+        <input>     Required    A glob that should be used to locate files as templates for fingerprinting
     
     Options
         -o, --output  Send fingerprinted HTML output to given file path instead of stdout
@@ -120,6 +174,6 @@ switch(cli.input.length){
         );
         break;
     default:
-        fingerPrintFile(cli.input[0], cli.flags.output)
+        fingerPrintFrom(cli.input[0], cli.flags.output);
         break;
 }

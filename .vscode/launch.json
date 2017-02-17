@@ -8,7 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "Fingerprint with output",
-            "program": "${workspaceRoot}\\index.js",
+            "program": "${workspaceRoot}/index.js",
             "cwd": "${workspaceRoot}",
             "args": [
                 "index.html", "-o out.html"
@@ -18,10 +18,20 @@
             "type": "node",
             "request": "launch",
             "name": "Fingerprint",
-            "program": "${workspaceRoot}\\index.js",
+            "program": "${workspaceRoot}/index.js",
             "cwd": "${workspaceRoot}",
             "args": [
                 "index.html"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Fingerprint with glob",
+            "program": "${workspaceRoot}/index.js",
+            "cwd": "${workspaceRoot}",
+            "args": [
+                "*.html", "-o out/"
             ]
         },
         {
