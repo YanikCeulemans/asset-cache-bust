@@ -26,7 +26,7 @@ function extractStyleHrefsFromHtml(html) {
                 styleHrefs.push(attrs.href);
             },
             onend(){
-                resolve(List.of(...styleHrefs)); // Why is there no List.fromArray :'(
+                resolve(List(styleHrefs));
             },
             onerror: reject
         });
@@ -48,21 +48,15 @@ const mkdir = path => new Task((reject, resolve) => fs.mkdir(path, err => err ? 
 
 //    writeToPath : String -> String -> Task e ()
 const writeToPath = pathName => contents => {
-    return List.of(...path.normalize(path.dirname(pathName)).split(path.sep))
-        .map((d, index, dirs) => 
-            path.join(...dirs.toArray().slice(0, index + 1)))
-        .map(dirPath =>
+    return List(path.normalize(path.dirname(pathName)).split(path.sep))
+        .map((d, index, dirs) => path.join(...dirs.toArray().slice(0, index + 1)))
+        .map(dirPath => stat(dirPath)
             // TODO: Using stat to check for existence is not recommended, refactor. See: https://nodejs.org/api/fs.html#fs_fs_stat_path_callback
-            stat(dirPath)
-                .chain(stats =>
-                    stats.isDirectory() ? Task.of() : mkdir(dirPath))
-                .orElse((err) => mkdir(dirPath))
+            .chain(stats => stats.isDirectory() ? Task.of() : mkdir(dirPath))
+            .orElse((err) => mkdir(dirPath))
         )
-        .reduce((acc, curr) => {
-            return acc.chain(a => curr);
-        })
-        .chain(() => 
-            writeFile(pathName)(contents));
+        .reduce((acc, curr) => acc.chain(a => curr))
+        .chain(() => writeFile(pathName)(contents));
 };
 
 //    createFileFingerPrint : String -> String -> { original: String, fingerPrinted: String }
@@ -87,42 +81,26 @@ const log = description => thing => {
     return thing;
 };
 
-//    output : String -> String -> Task e ()
-const output = pathName => contents => {
-    if (pathName == null || pathName.trim() === ''){
-        return new Task((reject, resolve) => {
-            process.stdout.write(contents);
-            resolve();
-        });
-    }
-
-    return writeToPath(pathName.trim())(contents);
-}
-
-const extractFileNameFromHref = href =>
-    new Task((reject, resolve) =>
+//    extractFileNameFromHref : String -> Task e String
+const extractFileNameFromHref = href => {
+    return new Task((reject, resolve) =>
         !href ? reject('href cannot be null') : resolve(url.parse(href).pathname));
+}
 
 //       fingerPrintFile : String -> Task e String
 function fingerPrintFile(fileName) {
     return readFile(fileName)
-        .chain(html =>
-            extractStyleHrefsFromHtml(html)
-                .chain(styleHrefs =>
-                    styleHrefs
-                        .traverse(Task.of, styleHref =>
-                            extractFileNameFromHref(styleHref)
-                                .chain(readFile)
-                                .map(createFileFingerPrint(styleHref))
-                    )
+        .chain(html => extractStyleHrefsFromHtml(html)
+            .chain(styleHrefs => styleHrefs
+                .traverse(Task.of, styleHref => extractFileNameFromHref(styleHref)
+                    .chain(readFile)
+                    .map(createFileFingerPrint(styleHref))
                 )
-                .map(fingerPrints =>
-                    fingerPrints
-                        .map(fingerPrint => ({ original: `href="${fingerPrint.original}"`, fingerPrinted: `href="${fingerPrint.fingerPrinted}"` }))
-                        .reduce((acc, fingerPrint) =>
-                            acc.replace(fingerPrint.original, fingerPrint.fingerPrinted), html
-                        )
-                )
+            )
+            .map(fingerPrints => fingerPrints
+                .map(fingerPrint => ({ original: `href="${fingerPrint.original}"`, fingerPrinted: `href="${fingerPrint.fingerPrinted}"` }))
+                .reduce((acc, fingerPrint) => acc.replace(fingerPrint.original, fingerPrint.fingerPrinted), html)
+            )
         );
 }
 
@@ -130,7 +108,7 @@ function fingerPrintFile(fileName) {
 function getFilesFromPattern(pattern) {
     return new Task((reject, resolve) => 
         glob(pattern, {nonull: false}, (err, matches) => 
-            err ? reject(err) : resolve(List.of(...matches))));
+            err ? reject(err) : resolve(List(matches))));
 }
 
 //       fingerPrintFrom : (String, String) -> ()
@@ -141,13 +119,11 @@ function fingerPrintFrom(pattern, outPath){
             filePaths
                 .map(filePath =>
                     fingerPrintFile(filePath)
-                        .chain(output(path.join(outPath || '.', filePath)))
+                        .chain(writeToPath(path.join((outPath || '.').trim(), filePath)))
                 )
                 .reduce((acc, curr) => acc.chain(a => curr))
         )
         .fork(console.error.bind(console, 'error'), () => {
-            if (outPath == null || outPath.trim() === '') return;
-            
             console.log(chalk.green.bold('Success!'));
             console.timeEnd('Time consumed');
         });
