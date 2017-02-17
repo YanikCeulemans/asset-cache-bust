@@ -1,6 +1,7 @@
 const Task = require('data.task');
 const fs = require('fs');
 const path = require('path');
+const url = require('url');
 const { List } = require('immutable-ext');
 const htmlParser = require('htmlparser2');
 const fingerPrinter = require('fingerprinting');
@@ -67,13 +68,17 @@ const writeToPath = pathName => contents => {
 //    createFileFingerPrint : String -> String -> { original: String, fingerPrinted: String }
 const createFileFingerPrint = fileName => contents => {
     const separator = fileName.indexOf('?') !== -1 ? '&' : '?';
+    const parsedUrl = url.parse(fileName, true);
+    parsedUrl.search = null;
+    
     const fingerPrint = fingerPrinter(fileName, {
         format: '{hash}',
         content: contents
     });
+    parsedUrl.query.v = fingerPrint.file;
     return {
         original: fileName,
-        fingerPrinted: `${fileName}${separator}v=${fingerPrint.file}`
+        fingerPrinted: url.format(parsedUrl)
     };
 };
 
@@ -94,6 +99,10 @@ const output = pathName => contents => {
     return writeToPath(pathName.trim())(contents);
 }
 
+const extractFileNameFromHref = href =>
+    new Task((reject, resolve) =>
+        !href ? reject('href cannot be null') : resolve(url.parse(href).pathname));
+
 //       fingerPrintFile : String -> Task e String
 function fingerPrintFile(fileName) {
     return readFile(fileName)
@@ -101,8 +110,9 @@ function fingerPrintFile(fileName) {
             extractStyleHrefsFromHtml(html)
                 .chain(styleHrefs =>
                     styleHrefs
-                        .traverse(Task.of, styleHref => 
-                            readFile(styleHref)
+                        .traverse(Task.of, styleHref =>
+                            extractFileNameFromHref(styleHref)
+                                .chain(readFile)
                                 .map(createFileFingerPrint(styleHref))
                     )
                 )
@@ -131,7 +141,7 @@ function fingerPrintFrom(pattern, outPath){
             filePaths
                 .map(filePath =>
                     fingerPrintFile(filePath)
-                        .chain(output(path.join(outPath, filePath)))
+                        .chain(output(path.join(outPath || '.', filePath)))
                 )
                 .reduce((acc, curr) => acc.chain(a => curr))
         )
@@ -148,16 +158,18 @@ module.exports = fingerPrintFile;
 
 const cli = meow(`
     Usage
-      $ fingerprint <input>
+      $ asset-cache-bust <input>
 
     Input
         <input>     Required    A glob that should be used to locate files as templates for fingerprinting
     
     Options
-        -o, --output  Send fingerprinted HTML output to given file path instead of stdout
+        -o, --output  Send fingerprinted HTML output to given file path instead of overwriting the input files
  
     Examples
-      $ fingerprint index.html -o out.html
+      $ asset-cache-bust index.html -o out/
+
+      $ asset-cache-bust '*.html'
 `, {
     alias: {
         o: 'output'
