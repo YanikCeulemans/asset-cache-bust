@@ -51,7 +51,7 @@ const cacheBustHtml = html => {
     return extractStyleHrefsFromHtml(html)
         .chain(styleHrefs => styleHrefs
             .traverse(Task.of, styleHref => extractFileNameFromHref(styleHref)
-                .chain(readFile)
+                .chain(readFile) // TODO: How do I pull this out so I can unit test this properly?
                 .map(createFileFingerPrint(styleHref))
             )
         )
