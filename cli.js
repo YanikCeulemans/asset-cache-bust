@@ -7,7 +7,6 @@ const meow = require('meow');
 const glob = require('glob');
 const package = require('./package.json');
 const cacheBustHtml = require('./index.js');
-const { log } = require('./util.js');
 
 //    getFileNamesFromPattern : String -> Task e (List String)
 const getFileNamesFromPattern = pattern => {

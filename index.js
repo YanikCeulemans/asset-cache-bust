@@ -1,11 +1,9 @@
 const Task = require('data.task');
 const { readFile } = require('./taskfs.js');
-const path = require('path');
 const url = require('url');
 const { List } = require('immutable-ext');
 const htmlParser = require('htmlparser2');
 const fingerPrinter = require('fingerprinting');
-const package = require('./package.json');
 
 //    extractStyleHrefsFromHtml : String -> Task e (List String)
 const extractStyleHrefsFromHtml = html => {
