@@ -6,3 +6,7 @@ exports.log = description => thing => {
     console.log(description, thing);
     return thing;
 };
+
+exports.id = x => x
+
+exports.always = thing => never => thing

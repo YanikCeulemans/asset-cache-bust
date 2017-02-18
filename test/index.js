@@ -33,7 +33,6 @@ describe('asset-cache-bust', () => {
     });
     it('Should skip assets that that are not contained in a matching tag', done => {
         const html = `
-            <link href="test/existant.css" rel="stylesheet" data-finger-print />
             <link href="nonexistant.css" rel="stylesheet" />
         `;
         cacheBustHtml(html)
