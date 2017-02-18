@@ -19,6 +19,7 @@ const getFileNamesFromPattern = pattern => {
     );
 };
 
+//    checkChangesMade : String -> String -> Task e String
 const checkChangesMade = originalContents => changedContents => {
     return new Task((reject, resolve) => {
         if (originalContents === changedContents) return reject('Original contents and changed contents are equal');
@@ -42,9 +43,14 @@ const writeToPath = pathName => originalContents => contents => {
                 .map(() => console.log('Wrote file: ' + chalk.bold(pathName)))
         )
         .orElse(() => {
-            console.log('No cache busting replacements have been made. Exiting.');
+            console.log(`No cache busting replacements have been made. Skipping file: ${pathName}`);
             return Task.of();
         });
+};
+
+//    createOutputFilePath : String -> String -> String
+const createOutputFilePath = outpath => filePath => {
+    return path.join((outpath || '.').trim(), filePath);
 };
 
 //    cacheBustFromGlob : String -> String -> ()
@@ -61,7 +67,7 @@ const cacheBustFromGlob = pattern => outPath => {
                         })
                         .chain(originalHtmlContents =>
                             cacheBustHtml(originalHtmlContents)
-                                .chain(writeToPath(path.join((outPath || '.').trim(), filePath))(originalHtmlContents))
+                                .chain(writeToPath(createOutputFilePath(outPath)(filePath))(originalHtmlContents))
                         )
                 )
                 .reduce((acc, curr) => acc.chain(a => curr), Task.of())
