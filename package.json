@@ -9,6 +9,10 @@
   },
   "author": "Yanik Ceulemans",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YanikCeulemans/asset-cache-bust"
+  },
   "dependencies": {
     "chalk": "1.1.3",
     "data.task": "3.1.1",
