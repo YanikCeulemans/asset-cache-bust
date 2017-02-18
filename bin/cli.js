@@ -1,12 +1,12 @@
 const Task = require('data.task');
-const { readFile, writeFile, stat, mkdir } = require('./taskfs.js');
+const { readFile, writeFile, stat, mkdir } = require('../taskfs.js');
 const path = require('path');
 const { List } = require('immutable-ext');
 const chalk = require('chalk');
 const meow = require('meow');
 const glob = require('glob');
-const package = require('./package.json');
-const cacheBustHtml = require('./index.js');
+const package = require('../package.json');
+const cacheBustHtml = require('../index.js');
 
 //    getFileNamesFromPattern : String -> Task e (List String)
 const getFileNamesFromPattern = pattern => {
