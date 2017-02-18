@@ -25,5 +25,20 @@
   },
   "devDependencies": {
     "mocha": "^3.2.0"
-  }
+  },
+  "files": [
+    "index.js",
+    "taskfs.js",
+    "util.js",
+    "bin/"
+  ],
+  "keywords": [
+    "cache",
+    "bust",
+    "invalidate",
+    "bundling",
+    "html",
+    "replace",
+    "asset"
+  ]
 }

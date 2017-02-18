@@ -6,8 +6,8 @@ This module parses HTML and finds `<link>` tags that contain a `href` and `data-
 attribute. It then extracts the URL from the `href` attribute and tries to read that file
 from disk. If the file was successfully read, it uses its content to create an MD5 hash. This
 hash is then used to append to the original `href` URL as a query parameter in the form
-of: `v=md5stringGoesHere`. When all matches URLs have been replaced, the replaced HTML will
-be passed to the success callback.
+of: `v=md5stringGoesHere`. When all matched URLs have been replaced in the original HTML, it
+will be passed to the success callback.
 
 
 ## How to use it
@@ -28,10 +28,8 @@ assetCacheBust(validHtml)
     );
 ```
 
-> The default behaviour of the CLI is to replace the given HTML files with the cache
-> busted version. See the CLI help for more information and options.
-
 To use the CLI you have 2 options:
+
 * Install this package globally:
     1. Install this module using `npm install -g asset-cache-bust`
     2. Cache bust html files using `asset-cache-bust *.html` for example
@@ -41,6 +39,9 @@ To use the CLI you have 2 options:
     2. Create an npm script in your `package.json` file with a fitting name and corresponding value.
     e.g. `"bust-cache": "asset-cache-bust *.html"`
     3. Run your npm script using `npm run <script name from above goes here>`
+    
+> The default behaviour of the CLI is to replace the given HTML files with the cache
+> busted version. See the CLI help for more information and options.
 
 > If no matching tags were found and thus no replacements can be made, no files will be
 > changed.
