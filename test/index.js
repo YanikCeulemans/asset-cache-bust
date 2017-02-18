@@ -13,7 +13,7 @@ describe('asset-cache-bust', () => {
         const html = '<link href="nonexistant.css" rel="stylesheet" />';
         cacheBustHtml(html)
             .fork(done, bustedHtml => {
-                if (bustedHtml !== html) done(Error('html without matches should not be modified'));
+                if (bustedHtml !== html) done(Error());
                 done();
             });
     });
