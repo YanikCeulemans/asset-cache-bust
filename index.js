@@ -26,6 +26,7 @@ const extractStyleHrefsFromHtml = html => {
 
 //    createFileFingerPrint : String -> String -> { original: String, fingerPrinted: String }
 const createFileFingerPrint = fileName => contents => {
+    if (!contents) return null;
     const parsedUrl = url.parse(fileName, true);
     parsedUrl.search = null;
     
@@ -52,9 +53,11 @@ const cacheBustHtml = html => {
         .chain(styleHrefs => styleHrefs
             .traverse(Task.of, styleHref => extractFileNameFromHref(styleHref)
                 .chain(readFile) // TODO: How do I pull this out so I can unit test this properly?
+                .orElse(() => Task.of())
                 .map(createFileFingerPrint(styleHref))
             )
         )
+        .map(fingerPrints => fingerPrints.filter(x => x))
         .map(fingerPrints => fingerPrints
             .map(fingerPrint => ({ original: `href="${fingerPrint.original}"`, fingerPrinted: `href="${fingerPrint.fingerPrinted}"` }))
             .reduce((acc, fingerPrint) => acc.replace(fingerPrint.original, fingerPrint.fingerPrinted), html)

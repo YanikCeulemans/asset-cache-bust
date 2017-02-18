@@ -5,7 +5,7 @@
   "main": "index.js",
   "bin": "bin/asset-cache-bust",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha -w"
   },
   "author": "Yanik Ceulemans",
   "license": "MIT",
@@ -20,7 +20,6 @@
     "meow": "3.7.0"
   },
   "devDependencies": {
-    "assert": "^1.4.1",
     "mocha": "^3.2.0"
   }
 }

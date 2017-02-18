@@ -46,6 +46,16 @@
         },
         {
             "type": "node",
+            "request": "launch",
+            "name": "Tests",
+            "program": "${workspaceRoot}/node_modules/mocha/bin/mocha",
+            "cwd": "${workspaceRoot}",
+            "args": [
+                "--debug"
+            ]
+        },
+        {
+            "type": "node",
             "request": "attach",
             "name": "Attach to Process",
             "port": 5858
