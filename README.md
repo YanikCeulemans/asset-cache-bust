@@ -33,14 +33,14 @@ assetCacheBust(validHtml)
 
 To use the CLI you have 2 options:
 * Install this package globally:
-    1) Install this module using `npm install -g asset-cache-bust`
-    2) Cache bust html files using `asset-cache-bust *.html` for example
+    1. Install this module using `npm install -g asset-cache-bust`
+    2. Cache bust html files using `asset-cache-bust *.html` for example
     > type `asset-cache-bust --help` for help and options
 * Install this package locally:
-    1) Install this module using `npm install asset-cache-bust`
-    2) Create an npm script in your `package.json` file with a fitting name and corresponding value.
+    1. Install this module using `npm install asset-cache-bust`
+    2. Create an npm script in your `package.json` file with a fitting name and corresponding value.
     e.g. `"bust-cache": "asset-cache-bust *.html"`
-    3) Run your npm script using `npm run <script name from above goes here>`
+    3. Run your npm script using `npm run <script name from above goes here>`
 
 > If no matching tags were found and thus no replacements can be made, no files will be
 > changed.
