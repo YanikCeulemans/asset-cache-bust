@@ -58,10 +58,14 @@ describe('asset-cache-bust', () => {
             });
     });
     it('Should process assets and add finger prints to their urls', done => {
-        const html = '<link href="test/existant.css" rel="stylesheet" data-finger-print />';
+        const html = `
+            <link href="test/existant.css" rel="stylesheet" data-finger-print />
+            <script src="test/script.js" data-finger-print></script>
+        `;
         cacheBustHtml(html)
             .fork(done, bustedHtml => {
                 if (!/"test\/existant\.css\?v=([a-z0-9])+"/.test(bustedHtml)) return done(Error());
+                if (!/"test\/script\.js\?v=([a-z0-9])+"/.test(bustedHtml)) return done(Error());
                 done();
             });
     });

@@ -1,19 +1,29 @@
 const Task = require('data.task');
 const { readFile } = require('./taskfs.js');
-const url = require('url');
+const urlUtil = require('url');
 const { List } = require('immutable-ext');
 const htmlParser = require('htmlparser2');
 const fingerPrinter = require('fingerprinting');
 const { id, always } = require('./util.js');
 
-//    extractStyleHrefsFromHtml : String -> Task e (List String)
-const extractStyleHrefsFromHtml = html => {
+//    extractAssetUrlsFromHtml : String -> Task e (List String)
+const extractAssetUrlsFromHtml = html => {
     return new Task((reject, resolve) => {
         const styleHrefs = [];
         const parser = new htmlParser.Parser({
             onopentag(tagName, attrs){
-                if (tagName !== 'link' || attrs.href == null || !('data-finger-print' in attrs)) return;
-                styleHrefs.push(attrs.href);
+                if (!('data-finger-print' in attrs)) return;
+
+                switch (tagName) {
+                    case 'link':
+                        styleHrefs.push(attrs.href);
+                        break;
+                    case 'script':
+                        styleHrefs.push(attrs.src);
+                        break;
+                    default:
+                        return;
+                }
             },
             onend(){
                 resolve(List(styleHrefs));
@@ -27,7 +37,7 @@ const extractStyleHrefsFromHtml = html => {
 
 //    createFileFingerPrint : String -> String -> { original: String, fingerPrinted: String }
 const createFileFingerPrint = fileName => contents => {
-    const parsedUrl = url.parse(fileName, true);
+    const parsedUrl = urlUtil.parse(fileName, true);
     parsedUrl.search = null;
     
     const fingerPrint = fingerPrinter(fileName, {
@@ -37,40 +47,23 @@ const createFileFingerPrint = fileName => contents => {
     parsedUrl.query.v = fingerPrint.file;
     return {
         original: fileName,
-        fingerPrinted: url.format(parsedUrl)
+        fingerPrinted: urlUtil.format(parsedUrl)
     };
 };
 
-//    extractFileNameFromHref : String -> Task e String
-const extractFileNameFromHref = href => {
+//    extractFileNameFromUrl : String -> Task e String
+const extractFileNameFromUrl = url => {
     return new Task((reject, resolve) =>
-        !href ? reject('href cannot be null') : resolve(url.parse(href).pathname));
-};
-
-//    wrapWithHref : String -> String
-const wrapWithHref = uri => {
-    return `href="${uri}"`;
-};
-
-//    setObjectProperty : a -> String -> Object -> Object
-const setObjectProperty = val => prop => obj => {
-    obj[prop] = val;
-    return obj;
-}
-
-//    mapObject : (a -> b) -> Object -> Object
-const mapObject = fn => obj => {
-    return Object.getOwnPropertyNames(obj)
-        .reduce((acc, currPropName) => setObjectProperty(fn(obj[currPropName]))(currPropName)(acc), {});
+        !url ? reject('href cannot be null') : resolve(urlUtil.parse(url).pathname));
 };
 
 //    fingerPrintHtml : String -> Task e String
 const cacheBustHtml = html => {
-    return extractStyleHrefsFromHtml(html)
+    return extractAssetUrlsFromHtml(html)
         .chain(styleHrefs => 
             styleHrefs
                 .traverse(Task.of, styleHref => 
-                    extractFileNameFromHref(styleHref)
+                    extractFileNameFromUrl(styleHref)
                         .chain(readFile) // TODO: How do I pull this out so I can unit test this properly?
                         .map(createFileFingerPrint(styleHref))
                         .orElse(always(Task.of()))
@@ -78,7 +71,6 @@ const cacheBustHtml = html => {
         )
         .map(fingerPrints => fingerPrints.filter(id))
         .map(fingerPrints => fingerPrints
-            .map(mapObject(wrapWithHref))
             .reduce((acc, fingerPrint) => acc.replace(fingerPrint.original, fingerPrint.fingerPrinted), html)
         )
 };
