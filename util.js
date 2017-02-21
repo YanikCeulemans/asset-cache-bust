@@ -1,3 +1,5 @@
+const Task = require('data.task');
+
 //    log : String -> a -> a
 /**
  * @description String -> a -> a
@@ -22,4 +24,10 @@ exports.setObjectProperty = val => prop => obj => {
 exports.mapObject = fn => obj => {
     return Object.getOwnPropertyNames(obj)
         .reduce((acc, currPropName) => setObjectProperty(fn(obj[currPropName]))(currPropName)(acc), {});
+};
+
+//      taskFromNullable : e -> a -> Task e a
+exports.taskFromNullable = rejectVal => nullable => {
+    if (nullable == null) return Task.rejected(rejectVal);
+    return Task.of(nullable);
 };
