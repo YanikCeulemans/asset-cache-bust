@@ -1,6 +1,6 @@
 {
   "name": "asset-cache-bust",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Bust your asset cache using querystring hashes based on actual asset content",
   "main": "index.js",
   "bin": "bin/asset-cache-bust",
