@@ -64,8 +64,8 @@ const mergeRootWithFileName = root => fileName => {
 };
 
 //    cacheBustHtml : (String, String) -> Task e String
-const cacheBustHtml = (html, nullableAssetsRoot) => {
-    return taskFromNullable({ message: 'The asset root cannot be null or undefined' })(nullableAssetsRoot)
+const cacheBustHtml = (html, assetsRoot) => {
+    return taskFromNullable({ message: 'The asset root cannot be null or undefined' })(assetsRoot)
         .chain(assetsRoot => 
             extractAssetUrlsFromHtml(html)
                 .chain(styleHrefs =>

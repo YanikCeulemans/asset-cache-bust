@@ -54,7 +54,7 @@ const createOutputFilePath = outpath => filePath => {
 };
 
 //    cacheBustFromGlob : String -> String -> ()
-const cacheBustFromGlob = pattern => outPath => {
+const cacheBustFromGlob = (pattern, outPath, assetRoot) => {
     console.time('Time consumed');
     getFileNamesFromPattern(pattern)
         .chain(filePaths =>
@@ -66,7 +66,7 @@ const cacheBustFromGlob = pattern => outPath => {
                             return fileContents;
                         })
                         .chain(originalHtmlContents =>
-                            cacheBustHtml(originalHtmlContents)
+                            cacheBustHtml(originalHtmlContents, assetRoot || process.cwd())
                                 .chain(writeToPath(createOutputFilePath(outPath)(filePath))(originalHtmlContents))
                         )
                 )
@@ -90,6 +90,7 @@ const cli = meow(`
     
     Options
         -o, --output  Send fingerprinted HTML output to given output directory path instead of overwriting the input files
+        --asset-root  The directory to consider as root for assets starting with '/'. Defaults to pwd
  
     Examples
       $ ${package.name} index.html -o out/
@@ -111,6 +112,6 @@ switch(cli.input.length){
         );
         break;
     default:
-        cacheBustFromGlob(cli.input[0])(cli.flags.output);
+        cacheBustFromGlob(cli.input[0], cli.flags.output, cli.flags.assetRoot);
         break;
 }
