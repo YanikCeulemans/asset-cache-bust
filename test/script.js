@@ -1,1 +1,1 @@
-console.log('some js');
+var somejs = 1 + 1;

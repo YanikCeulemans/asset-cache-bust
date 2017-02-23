@@ -1,11 +1,12 @@
 const Task = require('data.task');
+const Maybe = require('data.maybe');
 const { readFile } = require('./taskfs.js');
 const path = require('path');
 const urlUtil = require('url');
 const { List } = require('immutable-ext');
 const htmlParser = require('htmlparser2');
 const fingerPrinter = require('fingerprinting');
-const { id, always, taskFromNullable } = require('./util.js');
+const { id, always, taskFromNullable, getObjectProperty } = require('./util.js');
 
 //    extractAssetUrlsFromHtml : String -> Task e (List String)
 const extractAssetUrlsFromHtml = html => {
@@ -36,9 +37,16 @@ const extractAssetUrlsFromHtml = html => {
 };
 
 
-//    createFileFingerPrint : String -> String -> { original: String, fingerPrinted: String }
-const createFileFingerPrint = fileName => contents => {
-    const parsedUrl = urlUtil.parse(fileName, true);
+//    createFileFingerPrint : String -> Maybe Any -> String -> { original: String, fingerPrinted: String }
+const createFileFingerPrint = fileName => assetRootReplacement => contents => {
+    const url = assetRootReplacement
+        .chain(newRoot => {
+            if (typeof newRoot !== 'string') return Maybe.Nothing();
+            return Maybe.Just(urlUtil.resolve(newRoot, fileName));
+        })
+        .getOrElse(fileName);
+    
+    const parsedUrl = urlUtil.parse(url, true);
     parsedUrl.search = null;
     
     const fingerPrint = fingerPrinter(fileName, {
@@ -64,7 +72,7 @@ const mergeRootWithFileName = root => fileName => {
 };
 
 //    cacheBustHtml : (String, String) -> Task e String
-const cacheBustHtml = (html, assetsRoot) => {
+const cacheBustHtml = (html, assetsRoot, options) => {
     return taskFromNullable({ message: 'The asset root cannot be null or undefined' })(assetsRoot)
         .chain(assetsRoot => 
             extractAssetUrlsFromHtml(html)
@@ -73,9 +81,8 @@ const cacheBustHtml = (html, assetsRoot) => {
                         .traverse(Task.of, styleHref => 
                             extractFileNameFromUrl(styleHref)
                                 .map(mergeRootWithFileName(assetsRoot))
-                                // .map(merged => {console.log('merged', merged); return merged;})
                                 .chain(readFile) // TODO: How do I pull this out so I can unit test this properly?
-                                .map(createFileFingerPrint(styleHref))
+                                .map(createFileFingerPrint(styleHref)(getObjectProperty('replaceAssetRoot')(options)))
                                 .orElse(always(Task.of()))
                     )
                 )

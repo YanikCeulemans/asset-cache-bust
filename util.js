@@ -1,4 +1,5 @@
 const Task = require('data.task');
+const Maybe = require('data.maybe');
 
 //    log : String -> a -> a
 /**
@@ -30,4 +31,10 @@ exports.mapObject = fn => obj => {
 exports.taskFromNullable = rejectVal => nullable => {
     if (nullable == null) return Task.rejected(rejectVal);
     return Task.of(nullable);
+};
+
+//      getObjectProperty : String -> Object -> Maybe Any
+exports.getObjectProperty = prop => obj => {
+    if (prop == null || obj == null || obj[prop] == null) return Maybe.Nothing();
+    return Maybe.Just(obj[prop]);
 };

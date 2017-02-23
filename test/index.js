@@ -22,7 +22,7 @@ describe('asset-cache-bust', () => {
                 }, () => done(Error('Expected the success callback to not be called')));
         });
     });
-    describe('with current directory asset root', () => {
+    describe('with asset root', () => {
         it('Should not do anything given null', done => {
             cacheBustHtml(null, '.')
                 .fork(done, (bustedHtml) => {
@@ -126,6 +126,44 @@ describe('asset-cache-bust', () => {
                         done
                     );
                 });
+        });
+        describe('With replace asset root option', () => {
+            it('Should not replace the asset root if the option is null', done => {
+                const html = '<link href="/test/existant.css" rel="stylesheet" data-finger-print />';
+                const rootReplacement = null;
+
+                cacheBustHtml(html, '.', {replaceAssetRoot: rootReplacement})
+                    .fork(done, bustedHtml => {
+                        wrapExpect(
+                            () => expect(bustedHtml).to.match(/"\/test\/existant\.css\?v=([a-z0-9])+"/),
+                            done
+                        );
+                    });
+            });
+            it('Should not replace the asset root if the option does not contain a string', done => {
+                const html = '<link href="/test/existant.css" rel="stylesheet" data-finger-print />';
+                const rootReplacement = 1;
+
+                cacheBustHtml(html, '.', {replaceAssetRoot: rootReplacement})
+                    .fork(done, bustedHtml => {
+                        wrapExpect(
+                            () => expect(bustedHtml).to.match(/"\/test\/existant\.css\?v=([a-z0-9])+"/),
+                            done
+                        );
+                    });
+            });
+            it('Should correctly replace the asset root with the given option value', done => {
+                const html = '<link href="/test/existant.css" rel="stylesheet" data-finger-print />';
+                const rootReplacement = 'http://localhost';
+
+                cacheBustHtml(html, '.', {replaceAssetRoot: rootReplacement})
+                    .fork(done, bustedHtml => {
+                        wrapExpect(
+                            () => expect(bustedHtml).to.match(/"http:\/\/localhost\/test\/existant\.css\?v=([a-z0-9])+"/),
+                            done
+                        );
+                    });
+            });
         });
     });
 });

@@ -53,8 +53,8 @@ const createOutputFilePath = outpath => filePath => {
     return path.join((outpath || '.').trim(), filePath);
 };
 
-//    cacheBustFromGlob : String -> String -> ()
-const cacheBustFromGlob = (pattern, outPath, assetRoot) => {
+//    cacheBustFromGlob : String -> Object -> ()
+const cacheBustFromGlob = (pattern, flags) => {
     console.time('Time consumed');
     getFileNamesFromPattern(pattern)
         .chain(filePaths =>
@@ -66,8 +66,8 @@ const cacheBustFromGlob = (pattern, outPath, assetRoot) => {
                             return fileContents;
                         })
                         .chain(originalHtmlContents =>
-                            cacheBustHtml(originalHtmlContents, assetRoot || process.cwd())
-                                .chain(writeToPath(createOutputFilePath(outPath)(filePath))(originalHtmlContents))
+                            cacheBustHtml(originalHtmlContents, flags.assetRoot || process.cwd(), { replaceAssetRoot: flags.replaceAssetRoot })
+                                .chain(writeToPath(createOutputFilePath(flags.outPath)(filePath))(originalHtmlContents))
                         )
                 )
                 .reduce((acc, curr) => acc.chain(a => curr), Task.of())
@@ -89,8 +89,9 @@ const cli = meow(`
         <input>     Required    A glob that should be used to locate files as templates for fingerprinting
     
     Options
-        -o, --output  Send fingerprinted HTML output to given output directory path instead of overwriting the input files
-        --asset-root  The directory to consider as root for assets starting with '/'. Defaults to pwd
+        -o, --output            Send fingerprinted HTML output to given output directory path instead of overwriting the input files
+        --asset-root            The directory to consider as root for assets starting with '/'. Defaults to pwd
+        --replace-asset-root    Replace the leading '/' in asset URLs with the provided string
  
     Examples
       $ ${package.name} index.html -o out/
@@ -112,6 +113,6 @@ switch(cli.input.length){
         );
         break;
     default:
-        cacheBustFromGlob(cli.input[0], cli.flags.output, cli.flags.assetRoot);
+        cacheBustFromGlob(cli.input[0], cli.flags);
         break;
 }
