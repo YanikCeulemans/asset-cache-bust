@@ -71,6 +71,18 @@ const mergeRootWithFileName = root => fileName => {
     return path.join(root, fileName);
 };
 
+//    readAssetFile : Maybe Object -> String -> String
+const readAssetFile = eventsListener => fileName => {
+    return readFile(fileName)
+        .rejectedMap(err => {
+            eventsListener
+                .chain(getObjectProperty('info'))
+                .map(fn => fn(`Skipping matched asset '${fileName}' because it could not be found. Path searched: ${err.path}`));
+            return err;
+        });
+    
+};
+
 //    cacheBustHtml : (String, String) -> Task e String
 const cacheBustHtml = (html, assetsRoot, options) => {
     return taskFromNullable({ message: 'The asset root cannot be null or undefined' })(assetsRoot)
@@ -81,7 +93,7 @@ const cacheBustHtml = (html, assetsRoot, options) => {
                         .traverse(Task.of, styleHref => 
                             extractFileNameFromUrl(styleHref)
                                 .map(mergeRootWithFileName(assetsRoot))
-                                .chain(readFile) // TODO: How do I pull this out so I can unit test this properly?
+                                .chain(readAssetFile(getObjectProperty('eventsListener')(options))) // TODO: How do I pull this out so I can unit test this properly?
                                 .map(createFileFingerPrint(styleHref)(getObjectProperty('replaceAssetRoot')(options)))
                                 .orElse(always(Task.of()))
                     )

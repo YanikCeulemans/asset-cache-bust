@@ -8,11 +8,19 @@
             "type": "node",
             "request": "launch",
             "name": "cli with no changes",
-            "program": "${workspaceRoot}/cli.js",
+            "program": "${workspaceRoot}/bin/cli.js",
             "cwd": "${workspaceRoot}",
             "args": [
                 "/users/yanik/projects/elm-package.json"
             ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "index",
+            "program": "${workspaceRoot}/index.js",
+            "cwd": "${workspaceRoot}",
+            "args": []
         },
         {
             "type": "node",

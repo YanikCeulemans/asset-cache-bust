@@ -165,5 +165,35 @@ describe('asset-cache-bust', () => {
                     });
             });
         });
+        describe('With event emitter option', () => {
+            it('Should report skipped matched assets as info', done => {
+                const html = '<link href="undefined.css" rel="stylesheet" data-finger-print />';
+                const infoMsgs = [];
+                const eventsListener = {
+                    info: infoMsgs.push.bind(infoMsgs)
+                };
+
+                cacheBustHtml(html, '.', {eventsListener: eventsListener})
+                    .fork(done, bustedHtml => {
+                        wrapExpect(
+                            () => expect(infoMsgs.some(msg => /Skipping matched asset 'undefined\.css' because it could not be found\./.test(msg))).to.be.true,
+                            done
+                        );
+                    });
+            });
+            it('Should not report anything as info when info function is not provided', done => {
+                const html = '<link href="undefined.css" rel="stylesheet" data-finger-print />';
+                const eventsListener = {
+                };
+
+                cacheBustHtml(html, '.', {eventsListener: eventsListener})
+                    .fork(done, bustedHtml => {
+                        wrapExpect(
+                            () => expect(bustedHtml).to.be.ok,
+                            done
+                        );
+                    });
+            })
+        });
     });
 });

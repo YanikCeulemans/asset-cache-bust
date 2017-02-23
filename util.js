@@ -33,6 +33,8 @@ exports.taskFromNullable = rejectVal => nullable => {
     return Task.of(nullable);
 };
 
+
+// This function can be created using the folktale core.operators.get and Maybe.fromNullable functions
 //      getObjectProperty : String -> Object -> Maybe Any
 exports.getObjectProperty = prop => obj => {
     if (prop == null || obj == null || obj[prop] == null) return Maybe.Nothing();
