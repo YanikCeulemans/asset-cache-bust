@@ -53,6 +53,10 @@ const createOutputFilePath = outpath => filePath => {
     return path.join((outpath || '.').trim(), filePath);
 };
 
+const eventListeners = {
+    info: (msg) => console.info(chalk.blue('INFO:'), msg)
+};
+
 //    cacheBustFromGlob : String -> Object -> ()
 const cacheBustFromGlob = (pattern, flags) => {
     console.time('Time consumed');
@@ -66,8 +70,11 @@ const cacheBustFromGlob = (pattern, flags) => {
                             return fileContents;
                         })
                         .chain(originalHtmlContents =>
-                            cacheBustHtml(originalHtmlContents, flags.assetRoot || process.cwd(), { replaceAssetRoot: flags.replaceAssetRoot })
-                                .chain(writeToPath(createOutputFilePath(flags.outPath)(filePath))(originalHtmlContents))
+                            cacheBustHtml(originalHtmlContents, flags.assetRoot || process.cwd(), { 
+                                replaceAssetRoot: flags.replaceAssetRoot, 
+                                eventListeners: flags.verbose ? eventListeners : null 
+                            })
+                            .chain(writeToPath(createOutputFilePath(flags.outPath)(filePath))(originalHtmlContents))
                         )
                 )
                 .reduce((acc, curr) => acc.chain(a => curr), Task.of())
@@ -90,6 +97,7 @@ const cli = meow(`
     
     Options
         -o, --output            Send fingerprinted HTML output to given output directory path instead of overwriting the input files
+        -v, --verbose           Be verbose about what the tool is doing.
         --asset-root            The directory to consider as root for assets starting with '/'. Defaults to pwd
         --replace-asset-root    Replace the leading '/' in asset URLs with the provided string
  
@@ -99,7 +107,8 @@ const cli = meow(`
       $ ${package.name} '*.html'
 `, {
     alias: {
-        o: 'output'
+        o: 'output',
+        v: 'verbose'
     }
 });
 

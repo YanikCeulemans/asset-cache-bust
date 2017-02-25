@@ -6,6 +6,7 @@ const wrapExpect = (assertionFn, doneFn) => {
         assertionFn();
         doneFn();
     }catch(e) {
+        console.log('entered error catch');
         doneFn(e);
     }
 };
@@ -23,7 +24,7 @@ describe('asset-cache-bust', () => {
         });
     });
     describe('with asset root', () => {
-        it('Should not do anything given null', done => {
+        it('should not do anything given null', done => {
             cacheBustHtml(null, '.')
                 .fork(done, (bustedHtml) => {
                     wrapExpect(
@@ -32,7 +33,7 @@ describe('asset-cache-bust', () => {
                     );
                 });
         });
-        it('Should not do anything given an empty string', done => {
+        it('should not do anything given an empty string', done => {
             cacheBustHtml('', '.')
                 .fork(done, (bustedHtml) => {
                     wrapExpect(
@@ -41,7 +42,7 @@ describe('asset-cache-bust', () => {
                     );
                 });
         });
-        it('Should not do anything given invalid HTML', done => {
+        it('should not do anything given invalid HTML', done => {
             const html = 'link href="test/existant.css" rel="stylesheet" data-finger-print';
             cacheBustHtml(html, '.')
                 .fork(done, (bustedHtml) => {
@@ -51,7 +52,7 @@ describe('asset-cache-bust', () => {
                     );
                 });
         });
-        it('Should skip assets that could not be found', done => {
+        it('should skip assets that could not be found', done => {
             const html = '<link href="/somedir/other.css" rel="stylesheet" data-finger-print />';
             cacheBustHtml(html, '.')
                 .fork(done, bustedHtml => {
@@ -61,7 +62,7 @@ describe('asset-cache-bust', () => {
                     );
                 });
         });
-        it('Should skip assets that that are not contained in a matching tag', done => {
+        it('should skip assets that are not contained in a matching tag', done => {
             const html = `
                 <link href="nonexistant.css" rel="stylesheet" />
             `;
@@ -73,7 +74,7 @@ describe('asset-cache-bust', () => {
                     );
                 })
         });
-        it('Should skip links that do not have an href attribute', done => {
+        it('should skip links that do not have an href attribute', done => {
             const html = '<link rel="stylesheet" data-finger-print />';
             cacheBustHtml(html, '.')
                 .fork(done, (bustedHtml) => {
@@ -83,7 +84,7 @@ describe('asset-cache-bust', () => {
                     );
                 });
         });
-        it('Should skip links that have an empty href attribute', done => {
+        it('should skip links that have an empty href attribute', done => {
             const html = '<link href="" rel="stylesheet" data-finger-print />';
             cacheBustHtml(html, '.')
                 .fork(done, (result) => {
@@ -93,7 +94,7 @@ describe('asset-cache-bust', () => {
                     );
                 });
         });
-        it('Should process links that have a root prepended href attribute', done => {
+        it('should process links that have a root prepended href attribute', done => {
             const html = '<link href="/test/existant.css" rel="stylesheet" data-finger-print />';
             cacheBustHtml(html, '.')
                 .fork(done, bustedHtml => {
@@ -103,7 +104,7 @@ describe('asset-cache-bust', () => {
                     );
                 });
         });
-        it('Should process assets and add finger prints to their urls', done => {
+        it('should process assets and add finger prints to their urls', done => {
             const html = `
                 <link href="test/existant.css" rel="stylesheet" data-finger-print />
                 <script src="test/script.js" data-finger-print></script>
@@ -116,7 +117,7 @@ describe('asset-cache-bust', () => {
                     );
                 });
         });
-        it('Should correctly resolve file urls for a different root', done => {
+        it('should correctly resolve file urls for a different root', done => {
             const html = '<link href="/somedir/other.css" rel="stylesheet" data-finger-print />';
 
             cacheBustHtml(html, 'test/')
@@ -127,8 +128,8 @@ describe('asset-cache-bust', () => {
                     );
                 });
         });
-        describe('With replace asset root option', () => {
-            it('Should not replace the asset root if the option is null', done => {
+        describe('with replace asset root option', () => {
+            it('should not replace the asset root if the option is null', done => {
                 const html = '<link href="/test/existant.css" rel="stylesheet" data-finger-print />';
                 const rootReplacement = null;
 
@@ -140,7 +141,7 @@ describe('asset-cache-bust', () => {
                         );
                     });
             });
-            it('Should not replace the asset root if the option does not contain a string', done => {
+            it('should not replace the asset root if the option does not contain a string', done => {
                 const html = '<link href="/test/existant.css" rel="stylesheet" data-finger-print />';
                 const rootReplacement = 1;
 
@@ -152,7 +153,7 @@ describe('asset-cache-bust', () => {
                         );
                     });
             });
-            it('Should correctly replace the asset root with the given option value', done => {
+            it('should correctly replace the asset root with the given option value', done => {
                 const html = '<link href="/test/existant.css" rel="stylesheet" data-finger-print />';
                 const rootReplacement = 'http://localhost';
 
@@ -165,15 +166,15 @@ describe('asset-cache-bust', () => {
                     });
             });
         });
-        describe('With event emitter option', () => {
-            it('Should report skipped matched assets as info', done => {
+        describe('with events listener option', () => {
+            it('should report skipped matched assets as info', done => {
                 const html = '<link href="undefined.css" rel="stylesheet" data-finger-print />';
                 const infoMsgs = [];
-                const eventsListener = {
+                const eventListeners = {
                     info: infoMsgs.push.bind(infoMsgs)
                 };
 
-                cacheBustHtml(html, '.', {eventsListener: eventsListener})
+                cacheBustHtml(html, '.', {eventListeners: eventListeners})
                     .fork(done, bustedHtml => {
                         wrapExpect(
                             () => expect(infoMsgs.some(msg => /Skipping matched asset 'undefined\.css' because it could not be found\./.test(msg))).to.be.true,
@@ -181,19 +182,13 @@ describe('asset-cache-bust', () => {
                         );
                     });
             });
-            it('Should not report anything as info when info function is not provided', done => {
+            it('should throw a TypeError when provided info is not a function', () => {
                 const html = '<link href="undefined.css" rel="stylesheet" data-finger-print />';
-                const eventsListener = {
+                const eventListeners = {
+                    info: 1
                 };
-
-                cacheBustHtml(html, '.', {eventsListener: eventsListener})
-                    .fork(done, bustedHtml => {
-                        wrapExpect(
-                            () => expect(bustedHtml).to.be.ok,
-                            done
-                        );
-                    });
-            })
+                expect(() => cacheBustHtml(html, '.', {eventListeners: eventListeners}).fork(() => {}, () => {})).to.throw(TypeError)
+            });
         });
     });
 });

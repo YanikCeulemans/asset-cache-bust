@@ -6,7 +6,7 @@ const urlUtil = require('url');
 const { List } = require('immutable-ext');
 const htmlParser = require('htmlparser2');
 const fingerPrinter = require('fingerprinting');
-const { id, always, taskFromNullable, getObjectProperty } = require('./util.js');
+const { id, always, taskFromNullable, getObjectProperty, noop } = require('./util.js');
 
 //    extractAssetUrlsFromHtml : String -> Task e (List String)
 const extractAssetUrlsFromHtml = html => {
@@ -71,19 +71,28 @@ const mergeRootWithFileName = root => fileName => {
     return path.join(root, fileName);
 };
 
-//    readAssetFile : Maybe Object -> String -> String
-const readAssetFile = eventsListener => fileName => {
-    return readFile(fileName)
-        .rejectedMap(err => {
-            eventsListener
-                .chain(getObjectProperty('info'))
-                .map(fn => fn(`Skipping matched asset '${fileName}' because it could not be found. Path searched: ${err.path}`));
-            return err;
-        });
-    
+//    getLoggingFunction : String -> Object -> Function
+const getLoggingFunction = name => eventListeners => {
+    const loggingFn =
+        eventListeners
+            .chain(getObjectProperty(name))
+            .getOrElse(noop);
+    if (typeof loggingFn !== 'function') throw new TypeError(`eventListeners.info is not a function`);
+    return loggingFn;
 };
 
-//    cacheBustHtml : (String, String) -> Task e String
+//    readAssetFile : Maybe Object -> String -> String
+const readAssetFile = eventListeners => fileName => {
+    const info = getLoggingFunction('info')(eventListeners)
+
+    return readFile(fileName)
+        .rejectedMap(err => {
+            info(`Skipping matched asset '${fileName}' because it could not be found. Path searched: ${err.path}`);
+            return err;
+        });
+};
+
+//    cacheBustHtml : (String, String[, Object]) -> Task e String
 const cacheBustHtml = (html, assetsRoot, options) => {
     return taskFromNullable({ message: 'The asset root cannot be null or undefined' })(assetsRoot)
         .chain(assetsRoot => 
@@ -93,7 +102,7 @@ const cacheBustHtml = (html, assetsRoot, options) => {
                         .traverse(Task.of, styleHref => 
                             extractFileNameFromUrl(styleHref)
                                 .map(mergeRootWithFileName(assetsRoot))
-                                .chain(readAssetFile(getObjectProperty('eventsListener')(options))) // TODO: How do I pull this out so I can unit test this properly?
+                                .chain(readAssetFile(getObjectProperty('eventListeners')(options))) // TODO: How do I pull this out so I can unit test this properly?
                                 .map(createFileFingerPrint(styleHref)(getObjectProperty('replaceAssetRoot')(options)))
                                 .orElse(always(Task.of()))
                     )

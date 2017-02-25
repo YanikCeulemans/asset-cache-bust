@@ -15,13 +15,16 @@ exports.id = x => x
 exports.always = thing => never => thing
 
 
+exports.noop = () => {};
+
+
 //      setObjectProperty : a -> String -> Object -> Object
 exports.setObjectProperty = val => prop => obj => {
     obj[prop] = val;
     return obj;
 }
 
-//      mapObject : (a -> b) -> Object -> Object
+//      mapObject : (a -> b) -> a -> b
 exports.mapObject = fn => obj => {
     return Object.getOwnPropertyNames(obj)
         .reduce((acc, currPropName) => setObjectProperty(fn(obj[currPropName]))(currPropName)(acc), {});
@@ -34,7 +37,6 @@ exports.taskFromNullable = rejectVal => nullable => {
 };
 
 
-// This function can be created using the folktale core.operators.get and Maybe.fromNullable functions
 //      getObjectProperty : String -> Object -> Maybe Any
 exports.getObjectProperty = prop => obj => {
     if (prop == null || obj == null || obj[prop] == null) return Maybe.Nothing();
