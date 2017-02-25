@@ -6,7 +6,6 @@ const wrapExpect = (assertionFn, doneFn) => {
         assertionFn();
         doneFn();
     }catch(e) {
-        console.log('entered error catch');
         doneFn(e);
     }
 };
@@ -170,24 +169,39 @@ describe('asset-cache-bust', () => {
             it('should report skipped matched assets as info', done => {
                 const html = '<link href="undefined.css" rel="stylesheet" data-finger-print />';
                 const infoMsgs = [];
-                const eventListeners = {
+                const logger = {
                     info: infoMsgs.push.bind(infoMsgs)
                 };
 
-                cacheBustHtml(html, '.', {eventListeners: eventListeners})
+                cacheBustHtml(html, '.', {logger})
                     .fork(done, bustedHtml => {
                         wrapExpect(
-                            () => expect(infoMsgs.some(msg => /Skipping matched asset 'undefined\.css' because it could not be found\./.test(msg))).to.be.true,
+                            () => expect(infoMsgs.some(msg => /'undefined\.css' -> Skipping matched asset because it could not be found\./.test(msg))).to.be.true,
+                            done
+                        );
+                    });
+            });
+            it('should report found matched assets as info', done => {
+                const html = '<link href="test/existant.css" rel="stylesheet" data-finger-print />';
+                const infoMsgs = [];
+                const logger = {
+                    info: infoMsgs.push.bind(infoMsgs)
+                };
+
+                cacheBustHtml(html, '.', {logger})
+                    .fork(done, bustedHtml => {
+                        wrapExpect(
+                            () => expect(infoMsgs.some(msg => /Found matched asset/.test(msg))).to.be.true,
                             done
                         );
                     });
             });
             it('should throw a TypeError when provided info is not a function', () => {
                 const html = '<link href="undefined.css" rel="stylesheet" data-finger-print />';
-                const eventListeners = {
+                const logger = {
                     info: 1
                 };
-                expect(() => cacheBustHtml(html, '.', {eventListeners: eventListeners}).fork(() => {}, () => {})).to.throw(TypeError)
+                expect(() => cacheBustHtml(html, '.', {logger}).fork(() => {}, () => {})).to.throw(TypeError)
             });
         });
     });

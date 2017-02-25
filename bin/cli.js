@@ -40,10 +40,10 @@ const writeToPath = pathName => originalContents => contents => {
                 )
                 .reduce((acc, curr) => acc.chain(a => curr), Task.of())
                 .chain(() => writeFile(pathName)(contents))
-                .map(() => console.log('Wrote file: ' + chalk.bold(pathName)))
+                .map(() => logger.info(`'${pathName}' -> cache busted asset urls and wrote file`))
         )
         .orElse(() => {
-            console.log(`No cache busting replacements have been made. Skipping file: ${pathName}`);
+            logger.info(`'${pathName}' -> no cache busting replacements have been made, skipping file`);
             return Task.of();
         });
 };
@@ -53,7 +53,7 @@ const createOutputFilePath = outpath => filePath => {
     return path.join((outpath || '.').trim(), filePath);
 };
 
-const eventListeners = {
+const logger = {
     info: (msg) => console.info(chalk.blue('INFO:'), msg)
 };
 
@@ -66,13 +66,13 @@ const cacheBustFromGlob = (pattern, flags) => {
                 .map(filePath =>
                     readFile(filePath)
                         .map(fileContents => {
-                            console.log('Read file: ' + chalk.bold(filePath));
+                            logger.info(`'${filePath}' -> read file`);
                             return fileContents;
                         })
                         .chain(originalHtmlContents =>
                             cacheBustHtml(originalHtmlContents, flags.assetRoot || process.cwd(), { 
                                 replaceAssetRoot: flags.replaceAssetRoot, 
-                                eventListeners: flags.verbose ? eventListeners : null 
+                                logger: flags.verbose ? logger : null 
                             })
                             .chain(writeToPath(createOutputFilePath(flags.outPath)(filePath))(originalHtmlContents))
                         )
@@ -97,7 +97,7 @@ const cli = meow(`
     
     Options
         -o, --output            Send fingerprinted HTML output to given output directory path instead of overwriting the input files
-        -v, --verbose           Be verbose about what the tool is doing.
+        -v, --verbose           Be verbose about what the tool is doing. Useful to check if the correct file paths are being used.
         --asset-root            The directory to consider as root for assets starting with '/'. Defaults to pwd
         --replace-asset-root    Replace the leading '/' in asset URLs with the provided string
  

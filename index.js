@@ -72,22 +72,26 @@ const mergeRootWithFileName = root => fileName => {
 };
 
 //    getLoggingFunction : String -> Object -> Function
-const getLoggingFunction = name => eventListeners => {
+const getLoggingFunction = name => logger => {
     const loggingFn =
-        eventListeners
+        logger
             .chain(getObjectProperty(name))
             .getOrElse(noop);
-    if (typeof loggingFn !== 'function') throw new TypeError(`eventListeners.info is not a function`);
+    if (typeof loggingFn !== 'function') throw new TypeError(`logger.info is not a function`);
     return loggingFn;
 };
 
 //    readAssetFile : Maybe Object -> String -> String
-const readAssetFile = eventListeners => fileName => {
-    const info = getLoggingFunction('info')(eventListeners)
+const readAssetFile = logger => fileName => {
+    const info = getLoggingFunction('info')(logger)
 
     return readFile(fileName)
+        .map(fileContents => {
+            info(`'${fileName}' -> Found matched asset, processing...`);
+            return fileContents;
+        })
         .rejectedMap(err => {
-            info(`Skipping matched asset '${fileName}' because it could not be found. Path searched: ${err.path}`);
+            info(`'${fileName}' -> Skipping matched asset because it could not be found. Path searched: ${err.path}`);
             return err;
         });
 };
@@ -102,7 +106,7 @@ const cacheBustHtml = (html, assetsRoot, options) => {
                         .traverse(Task.of, styleHref => 
                             extractFileNameFromUrl(styleHref)
                                 .map(mergeRootWithFileName(assetsRoot))
-                                .chain(readAssetFile(getObjectProperty('eventListeners')(options))) // TODO: How do I pull this out so I can unit test this properly?
+                                .chain(readAssetFile(getObjectProperty('logger')(options))) // TODO: How do I pull this out so I can unit test this properly?
                                 .map(createFileFingerPrint(styleHref)(getObjectProperty('replaceAssetRoot')(options)))
                                 .orElse(always(Task.of()))
                     )
