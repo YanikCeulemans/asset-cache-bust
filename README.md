@@ -2,19 +2,19 @@
 Bust the browser cache of your assets using query strings based on actual asset content.
 
 ## What it does
-This module parses HTML and finds `<link>` tags that contain a `href` and `data-finger-print` 
-attribute. It then extracts the URL from the `href` attribute and tries to read that file
-from disk. If the file was successfully read, it uses its content to create an MD5 hash. This
-hash is then used to append to the original `href` URL as a query parameter in the form
-of: `v=md5stringGoesHere`. When all matched URLs have been replaced in the original HTML, it
-will be passed to the success callback.
+This module parses HTML and finds `<link>` and `<script>` tags that contain a `href` or `src` 
+and `data-finger-print` attribute. It then extracts the URL from those attributes  and 
+tries to read those files from disk. If a file was successfully read, it uses its content 
+to create an MD5 hash. This hash is then used to append to the original URL as a query 
+parameter in the form of: `v=md5stringGoesHere`. When all matched URLs have been replaced in 
+the original HTML, it will be passed to the success callback.
 
 
 ## How to use it
 This module can used as a node module or through its CLI.
 
-> The given HTML should contain `<link>` tags in the following format for this package to
-> replace their `href`s: `<link href="asset.css" data-finger-print />`.
+> The given HTML should contain `<link>` or `<script>` tags in the following format for this package to
+> replace their URLs: `<link href="asset.css" data-finger-print />` or `<script src="some.js" data-finger-print></script>`.
 
 To use it as a node module, install it using: `npm install asset-cache-bust`
 
